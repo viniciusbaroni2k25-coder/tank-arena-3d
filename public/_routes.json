@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "include": ["/__tank_arena_online"],
+  "exclude": []
+}

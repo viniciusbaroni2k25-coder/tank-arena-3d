@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "types": ["@cloudflare/workers-types"],
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "noEmit": true
+  },
+  "include": ["./worker.ts", "../functions/__tank_arena_online.ts"]
+}

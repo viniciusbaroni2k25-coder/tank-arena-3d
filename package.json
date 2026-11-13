@@ -1,0 +1,27 @@
+{
+  "name": "tank-arena-3d",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && tsc -p cloudflare/tsconfig.json && vite build && node scripts/prune-production-assets.mjs",
+    "preview": "vite preview",
+    "deploy:worker": "npx --yes --package=node@22 -c 'node ./node_modules/wrangler/bin/wrangler.js deploy --config cloudflare/wrangler.jsonc'",
+    "deploy:pages": "npx --yes --package=node@22 -c 'node ./node_modules/wrangler/bin/wrangler.js pages deploy dist'",
+    "deploy": "npm run build && npm run deploy:worker && npm run deploy:pages"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261113.1",
+    "@types/node": "^26.6.6",
+    "@types/three": "^0.187.0",
+    "@types/ws": "^8.18.2",
+    "typescript": "~7.0.2",
+    "vite": "^7.3.8",
+    "wrangler": "^4.161.0"
+  },
+  "dependencies": {
+    "three": "^0.187.0",
+    "ws": "^8.23.0"
+  }
+}

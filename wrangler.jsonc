@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tank-arena",
+  "compatibility_date": "2026-11-12",
+  "pages_build_output_dir": "./dist",
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "LOBBY",
+        "class_name": "GameLobby",
+        "script_name": "tank-arena-lobby"
+      }
+    ]
+  }
+}

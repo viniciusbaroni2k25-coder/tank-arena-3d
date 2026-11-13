@@ -1,0 +1,186 @@
+[
+  {
+    "name": "Supply Truck",
+    "file": "supply_truck.glb",
+    "source": "https://3dassets.dev/assets/armoured-column-and-field-camp-supply-truck-a0414d94",
+    "cdn": "https://cdn.3dassets.dev/assets/23674/v1/model.glb",
+    "license": "CC0 1.0 Universal",
+    "bytes": 41352,
+    "triangles": 744,
+    "meshes": 8,
+    "materials": 8,
+    "bounds": {
+      "min": [
+        -2.3499999046325684,
+        -1.6833821836703677e-05,
+        -4.349999904632568
+      ],
+      "max": [
+        2.3499999046325684,
+        2.699991761017323,
+        4.550000190734863
+      ]
+    }
+  },
+  {
+    "name": "Command Tent",
+    "file": "command_tent.glb",
+    "source": "https://3dassets.dev/assets/armoured-column-and-field-camp-command-tent-5c85fae1",
+    "cdn": "https://cdn.3dassets.dev/assets/23689/v1/model.glb",
+    "license": "CC0 1.0 Universal",
+    "bytes": 25332,
+    "triangles": 448,
+    "meshes": 5,
+    "materials": 5,
+    "bounds": {
+      "min": [
+        -3.024960208281856,
+        -9.589531847709054e-06,
+        -4.070977687835693
+      ],
+      "max": [
+        3.024960208281856,
+        3.6101050904778926,
+        4.125406265258789
+      ]
+    }
+  },
+  {
+    "name": "Guard Tower",
+    "file": "guard_tower.glb",
+    "source": "https://3dassets.dev/assets/armoured-column-and-field-camp-guard-tower-0840fcb9",
+    "cdn": "https://cdn.3dassets.dev/assets/23692/v1/model.glb",
+    "license": "CC0 1.0 Universal",
+    "bytes": 39316,
+    "triangles": 768,
+    "meshes": 3,
+    "materials": 3,
+    "bounds": {
+      "min": [
+        -1.4199999570846558,
+        0,
+        -1.4199999570846558
+      ],
+      "max": [
+        1.4199999570846558,
+        7.279489369829257,
+        1.4300941553966284
+      ]
+    }
+  },
+  {
+    "name": "Camp Gate With Barrier",
+    "file": "camp_gate_with_barrier.glb",
+    "source": "https://3dassets.dev/assets/armoured-column-and-field-camp-camp-gate-8eb20a37",
+    "cdn": "https://cdn.3dassets.dev/assets/23695/v1/model.glb",
+    "license": "CC0 1.0 Universal",
+    "bytes": 14864,
+    "triangles": 228,
+    "meshes": 7,
+    "materials": 6,
+    "bounds": {
+      "min": [
+        -3,
+        -0.0002075020225791313,
+        -0.3999145481734673
+      ],
+      "max": [
+        3,
+        3.600031952793286,
+        0.6599728429749862
+      ]
+    }
+  },
+  {
+    "name": "Basket Wall Straight",
+    "file": "basket_wall_straight.glb",
+    "source": "https://3dassets.dev/assets/armoured-column-and-field-camp-basket-wall-straight-44efbfbc",
+    "cdn": "https://cdn.3dassets.dev/assets/23693/v1/model.glb",
+    "license": "CC0 1.0 Universal",
+    "bytes": 22532,
+    "triangles": 432,
+    "meshes": 2,
+    "materials": 2,
+    "bounds": {
+      "min": [
+        -1.5049999952316284,
+        3.278873392209558e-05,
+        -0.4700774416046889
+      ],
+      "max": [
+        1.5049999952316284,
+        1.4299059744996954,
+        0.4750774368363173
+      ]
+    }
+  },
+  {
+    "name": "Sandbag Wall Straight",
+    "file": "sandbag_wall_straight.glb",
+    "source": "https://3dassets.dev/assets/armoured-column-and-field-camp-sandbag-wall-straight-1f32a2f5",
+    "cdn": "https://cdn.3dassets.dev/assets/23694/v1/model.glb",
+    "license": "CC0 1.0 Universal",
+    "bytes": 23556,
+    "triangles": 468,
+    "meshes": 1,
+    "materials": 1,
+    "bounds": {
+      "min": [
+        -1.4900000095367432,
+        -7.875645553956367e-05,
+        -0.310043647749349
+      ],
+      "max": [
+        1.5700000524520874,
+        1.1400787421504248,
+        0.310043647749349
+      ]
+    }
+  },
+  {
+    "name": "Camo Net Frame",
+    "file": "camo_net_frame.glb",
+    "source": "https://3dassets.dev/assets/armoured-column-and-field-camp-camo-net-frame-43a47901",
+    "cdn": "https://cdn.3dassets.dev/assets/23698/v1/model.glb",
+    "license": "CC0 1.0 Universal",
+    "bytes": 64328,
+    "triangles": 1288,
+    "meshes": 3,
+    "materials": 3,
+    "bounds": {
+      "min": [
+        -3.509999990463257,
+        -9.971137638653538e-05,
+        -3.509999990463257
+      ],
+      "max": [
+        3.509999990463257,
+        3.9501364825027783,
+        3.509999990463257
+      ]
+    }
+  },
+  {
+    "name": "Fuel Dump Berm",
+    "file": "fuel_dump_berm.glb",
+    "source": "https://3dassets.dev/assets/armoured-column-and-field-camp-fuel-dump-berm-1c456cc9",
+    "cdn": "https://cdn.3dassets.dev/assets/23701/v1/model.glb",
+    "license": "CC0 1.0 Universal",
+    "bytes": 49476,
+    "triangles": 960,
+    "meshes": 5,
+    "materials": 5,
+    "bounds": {
+      "min": [
+        -5.199999809265137,
+        -0.00024994588941795043,
+        -4.899746516649711
+      ],
+      "max": [
+        5.199999809265137,
+        2.700000047683716,
+        4.899746516649711
+      ]
+    }
+  }
+]

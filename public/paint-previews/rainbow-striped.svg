@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Pintura arco-íris listrada">
+  <defs>
+    <pattern id="rainbow" width="224" height="224" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">
+      <rect x="0" y="0" width="32" height="224" fill="#f04438"/>
+      <rect x="32" y="0" width="32" height="224" fill="#ff922b"/>
+      <rect x="64" y="0" width="32" height="224" fill="#ffd43b"/>
+      <rect x="96" y="0" width="32" height="224" fill="#51cf66"/>
+      <rect x="128" y="0" width="32" height="224" fill="#22b8cf"/>
+      <rect x="160" y="0" width="32" height="224" fill="#4c6ef5"/>
+      <rect x="192" y="0" width="32" height="224" fill="#be4bdb"/>
+    </pattern>
+    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#fff" stop-opacity=".28"/>
+      <stop offset=".48" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#071116" stop-opacity=".22"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" fill="url(#rainbow)"/>
+  <rect width="256" height="256" fill="url(#sheen)"/>
+</svg>
