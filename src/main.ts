@@ -5,6 +5,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { initializeAccountGate, type AccountView } from './account-gate';
 import './style.css';
 
 // =====================================================
@@ -2449,14 +2450,14 @@ function playerArenaHeading(): number {
 type TeamHealthBar = { sprite: THREE.Sprite; update: (health: number, maxHealth: number) => void; setTeam: (team: Team) => void };
 function createTeamHealthBar(root: THREE.Group, team: Team): TeamHealthBar {
   const canvas = document.createElement('canvas');
-  canvas.width = 192; canvas.height = 32;
+  canvas.width = 224; canvas.height = 36;
   const context = canvas.getContext('2d')!;
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: true, depthWrite: false });
   const sprite = new THREE.Sprite(material);
-  sprite.position.set(0, 3.45, 0);
-  sprite.scale.set(3.05, 0.52, 1);
+  sprite.position.set(0, 3.55, 0);
+  sprite.scale.set(2.75, 0.44, 1);
   root.add(sprite);
   let currentTeam = team;
   let lastHealth = 1, lastMaxHealth = 1;
@@ -2471,23 +2472,23 @@ function createTeamHealthBar(root: THREE.Group, team: Team): TeamHealthBar {
     const key = `${Math.round(ratio * 100)}:${shownHealth}:${shownMaxHealth}:${currentTeam}`;
     if (key === lastRenderKey) return;
     lastRenderKey = key;
-    context.clearRect(0, 0, 192, 32);
-    context.fillStyle = 'rgba(7,10,12,.94)'; context.fillRect(1, 1, 190, 30);
-    context.font = '700 12px Arial';
-    context.textAlign = 'right';
-    context.textBaseline = 'middle';
-    context.fillStyle = '#edf1e7';
-    context.fillText(`${shownHealth} / ${shownMaxHealth}`, 183, 10);
-    const hue = Math.round(ratio * 118);
-    context.fillStyle = '#2a3231';
-    context.fillRect(6, 21, 180, 7);
-    context.fillStyle = `hsl(${hue} 68% 46%)`;
-    context.fillRect(6, 21, 180 * ratio, 7);
-    context.fillStyle = currentTeam === 'black' ? '#c3a468' : '#83b8c2';
-    context.fillRect(2, 3, 3, 26);
-    context.strokeStyle = '#74817a';
-    context.lineWidth = 1;
-    context.strokeRect(1, 1, 190, 30);
+    context.clearRect(0, 0, 224, 36);
+    context.shadowColor = '#000b'; context.shadowBlur = 5; context.shadowOffsetY = 2;
+    context.fillStyle = 'rgba(7,11,13,.92)'; context.beginPath(); context.roundRect(1, 2, 222, 31, 5); context.fill();
+    context.shadowColor = 'transparent'; context.shadowBlur = 0; context.shadowOffsetY = 0;
+    context.fillStyle = '#25302d'; context.beginPath(); context.roundRect(6, 6, 212, 23, 3); context.fill();
+    const hue = ratio > .55 ? 116 : ratio > .27 ? 42 : 4;
+    if (ratio > 0) {
+      context.fillStyle = `hsl(${hue} 65% 43%)`;
+      context.beginPath(); context.roundRect(6, 6, Math.max(4, 212 * ratio), 23, 3); context.fill();
+      context.fillStyle = `hsla(${hue} 80% 75% / .28)`;
+      context.fillRect(9, 8, Math.max(0, 206 * ratio), 2);
+    }
+    context.font = '800 14px Arial'; context.textAlign = 'right'; context.textBaseline = 'middle';
+    context.lineWidth = 3; context.strokeStyle = '#07100de8'; context.strokeText(String(shownHealth), 211, 18);
+    context.fillStyle = '#f3f4e9'; context.fillText(String(shownHealth), 211, 18);
+    context.strokeStyle = currentTeam === 'black' ? '#d2b77b' : '#a8d4d8';
+    context.lineWidth = 1; context.beginPath(); context.roundRect(1, 2, 222, 31, 5); context.stroke();
     texture.needsUpdate = true;
   };
   const setTeam = (nextTeam: Team) => {
@@ -2552,6 +2553,9 @@ player.position.copy(teamBasePosition(playerTeam));
 syncTankGearToWorld(playerParts);
 
 let selectedTankClass: TankClass = 'medium';
+let pendingTankClass: TankClass | null = null;
+let pendingWeapon: WeaponType | null = null;
+let applyingRespawnLoadout = false;
 const UPGRADES_STORAGE_KEY = 'tank-arena-upgrades-v1';
 const upgradeLevels = (() => {
   try {
@@ -3105,10 +3109,7 @@ hud.innerHTML = `
   <div id="hit-marker"></div>
   <div id="damage-flash"></div>
 
-  <div id="help">
-    WASD mover · mouse mirar · espaço disparar · 1–5 trocar arma · TAB placar<br>
-    Z/X girar torre · C centralizar · Q/E câmera · G oficina · M menu · Delete autodestruição · ESC liberar cursor
-  </div>
+  <div id="help" role="status">WASD mover · mouse mirar · espaço disparar · TAB placar</div>
 
   <div id="respawn-message"></div>
   <div id="wave-banner"></div>
@@ -3128,10 +3129,11 @@ hud.innerHTML = `
           <button class="garage-nav-item" data-garage-tab="paint"><i>◈</i><span>PINTURA</span></button>
           <button class="garage-nav-item" data-garage-tab="equipment"><i>⚙</i><span>EQUIPAMENTO</span></button>
           <button class="garage-nav-item" data-garage-tab="rank"><i>★</i><span>PATENTES</span></button>
+          <button class="garage-nav-item" data-garage-tab="leaderboard"><i>♛</i><span>RANKING</span></button>
           <button class="garage-nav-item" data-garage-tab="graphics"><i>◉</i><span>GRÁFICOS</span></button>
           <button class="garage-nav-item" data-garage-tab="battle"><i>⌖</i><span>BATALHA</span></button>
           <button class="garage-nav-item" data-garage-tab="containers"><i>▤</i><span>CONTÊINERES</span></button>
-          <div class="garage-nav-foot"><span class="garage-status-dot"></span> PERFIL LOCAL</div>
+          <div class="garage-nav-foot"><span class="garage-status-dot"></span><span id="garage-account-name">CONTA</span><button id="account-logout" type="button">SAIR</button></div>
         </nav>
         <main class="garage-main">
           <section class="garage-showcase">
@@ -3183,6 +3185,13 @@ hud.innerHTML = `
               <div class="garage-section-head"><small>05 / RENDERIZAÇÃO</small><h3>Qualidade gráfica</h3><p>Ultra ativa sombras dinâmicas, antisserrilhado e correção de cor; Alto equilibra detalhe e desempenho.</p></div>
               <label for="graphics-quality">PREDEFINIÇÃO VISUAL</label>
               <select id="graphics-quality"><option value="balanced">Equilibrado</option><option value="high">Alto · resolução nativa</option><option value="maximum">Ultra · sombras e pós-processamento</option></select>
+            </div>
+            <div class="garage-section leaderboard-section" data-garage-section="leaderboard">
+              <div class="garage-section-head"><small>CARREIRA / MULTIPLAYER</small><h3>Ranking de comandantes</h3><p>Classificação calculada no servidor. Troque a ordenação sem sair da garagem.</p></div>
+              <div class="leaderboard-sort" role="group" aria-label="Ordenar ranking"><button type="button" data-leaderboard-sort="rank" aria-pressed="true">MAIOR PATENTE</button><button type="button" data-leaderboard-sort="crystals" aria-pressed="false">MAIS CRISTAIS</button></div>
+              <div id="leaderboard-status" class="leaderboard-status" role="status" aria-live="polite">Carregando ranking…</div>
+              <div class="leaderboard-table-wrap"><table class="leaderboard-table"><thead><tr><th>#</th><th>COMANDANTE</th><th>PATENTE</th><th>CRISTAIS</th></tr></thead><tbody id="leaderboard-rows"></tbody></table></div>
+              <p class="leaderboard-note">Eliminações e cristais de ranking são registrados pelo servidor em partidas online.</p>
             </div>
             <div class="garage-section" data-garage-section="battle">
               <div class="garage-section-head"><small>06 / OPERAÇÃO</small><h3>Configuração da partida</h3><p>Modo, mapa e quantidade de participantes são definidos separadamente.</p></div>
@@ -3339,7 +3348,7 @@ mainMenu.innerHTML = `
           <div class="main-menu-eyebrow">SISTEMA / CONFIGURAÇÃO LOCAL</div><h1>Opções do jogo</h1>
           <p>Ajustes aplicados imediatamente nesta sessão. A resolução nativa e as texturas são preservadas em todos os perfis.</p>
           <label class="main-menu-mode-card"><small>DESEMPENHO E QUALIDADE</small><select id="main-menu-quality"><option value="maximum">Ultra · sombras e pós-processamento</option><option value="high">Alto · resolução nativa</option><option value="balanced">Equilibrado</option></select></label>
-          <div class="main-menu-briefing"><small>CONTROLES</small><b>WASD movimenta · mouse mira · espaço dispara</b><span>1–5 troca arma · G abre a oficina · M abre o menu · TAB placar · F4 telemetria</span></div>
+            <div class="main-menu-briefing"><small>CONTROLES</small><b>WASD movimenta · mouse mira · espaço dispara</b><span>G abre a oficina · M abre o menu · TAB placar</span></div>
         </section>
       </main>
     </div>
@@ -3515,6 +3524,10 @@ function connectOnlineLobby() {
       if (message.type === 'welcome') {
         onlinePlayerId = message.playerId;
         renderOnlineRooms(message.rooms ?? []);
+      } else if (message.type === 'career-update') {
+        playerKills = Math.max(0, Number(message.kills) || 0);
+        playerCrystals = Math.max(0, Number(message.crystals) || 0);
+        updateRank(); updateHUD();
       } else if (message.type === 'rooms') {
         renderOnlineRooms(message.rooms ?? []);
       } else if (message.type === 'room-joined') {
@@ -3550,6 +3563,8 @@ function connectOnlineLobby() {
         createProjectile(new THREE.Vector3(shot.x, shot.y, shot.z), new THREE.Vector3(shot.dx, shot.dy, shot.dz), 'enemy', shot.damage, team, null, shot.weapon, shot.tankClass);
       } else if (message.type === 'remote-hit') {
         if (onlineRoomId && playerAlive) damagePlayer(message.damage, false, new THREE.Vector3(message.direction.x, message.direction.y, message.direction.z));
+      } else if (message.type === 'player-down') {
+        if (onlineRoomId && playerAlive) damagePlayer(playerHealth, true);
       } else if (message.type === 'join-error' || message.type === 'error') {
         onlinePendingStart = false;
         updateOnlineStatus(message.message ?? 'ERRO DE CONEXÃO', true);
@@ -3897,6 +3912,18 @@ compactBattleHudStyle.textContent = `
   }
 `;
 document.head.appendChild(compactBattleHudStyle);
+const focusedBattleHudStyle = document.createElement('style');
+focusedBattleHudStyle.textContent = `
+  .hud-panel{display:none!important}
+  #main-menu .main-menu-wallet{display:none!important}
+  #help{max-width:min(470px,calc(100vw - 24px));padding:7px 11px;font-size:10px;line-height:1.35;opacity:.9;transition:opacity .6s ease,transform .6s ease}
+  #help.tip-hidden{opacity:0;transform:translate(-50%,12px);pointer-events:none}
+  #wave-banner{top:76px!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important;width:max-content;max-width:calc(100vw - 24px);padding:7px 12px!important;border-radius:4px!important;font-size:11px!important;line-height:1.35!important;text-align:center!important;letter-spacing:.4px!important;box-shadow:0 6px 18px #0006!important}
+  #respawn-message{font-size:clamp(13px,2vw,17px)!important;line-height:1.3;max-width:calc(100vw - 24px);left:50%;transform:translateX(-50%);text-wrap:balance}
+  .leaderboard-section{min-height:0}.leaderboard-sort{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:12px 0}.leaderboard-sort button{min-height:36px;border:1px solid #68756b;background:#111a18;color:#bac7bd;font-size:9px;font-weight:800;letter-spacing:.5px;cursor:pointer}.leaderboard-sort button[aria-pressed="true"]{border-color:#c49c5a;background:#47371f;color:#f3d9a7}.leaderboard-status{min-height:25px;margin:7px 0;color:#9eaaa4;font-size:10px}.leaderboard-table-wrap{max-height:min(42vh,360px);overflow:auto;border:1px solid #ffffff1b}.leaderboard-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:9px}.leaderboard-table th{position:sticky;top:0;padding:9px 5px;background:#1b2827;color:#aebdb5;text-align:left;font-size:8px;letter-spacing:.5px}.leaderboard-table td{padding:9px 5px;border-top:1px solid #ffffff12;color:#dfe6df;overflow-wrap:anywhere}.leaderboard-table tr.current-player td{background:#775a2b30;color:#ffe2a6}.leaderboard-table th:first-child,.leaderboard-table td:first-child{width:30px;text-align:center}.leaderboard-table th:nth-child(2){width:35%}.leaderboard-table th:nth-child(3){width:28%}.leaderboard-table td:last-child{text-align:right;font-variant-numeric:tabular-nums}.leaderboard-note{margin-top:10px;color:#85948c;font-size:9px;line-height:1.5}
+  @media(max-width:600px){#help{bottom:10px;width:auto;max-width:calc(100vw - 24px);font-size:9px;padding:6px 9px}#wave-banner{top:62px!important;max-width:calc(100vw - 20px);font-size:10px!important;padding:6px 9px!important}#respawn-message{top:42%!important;font-size:12px!important}}
+`;
+document.head.appendChild(focusedBattleHudStyle);
 
 const healthText = document.getElementById('health-text')!;
 const healthFill = document.getElementById('health-fill')!;
@@ -4472,14 +4499,16 @@ function openGarage() {
   setGarageTab('vehicle');
   requestAnimationFrame(resizeGaragePreview);
   const returnButton = document.getElementById('garage-close') as HTMLButtonElement;
-  (document.getElementById('tank-weapon') as HTMLSelectElement).value = selectedWeapon;
+  (document.getElementById('tank-weapon') as HTMLSelectElement).value = pendingWeapon ?? selectedWeapon;
+  (document.getElementById('tank-class') as HTMLSelectElement).value = pendingTankClass ?? selectedTankClass;
+  refreshGarageItemGrids();
   (document.getElementById('game-mode') as HTMLSelectElement).value = gameMode;
   (document.getElementById('garage-player-count') as HTMLSelectElement).value = String(battleTeamSize);
   returnButton.textContent = 'FECHAR GARAGEM';
   const status = document.getElementById('garage-status');
   const condition = document.getElementById('garage-condition-text');
   const liveStatus = garage.querySelector('.garage-live');
-  if (status) status.textContent = 'COMBATE ATIVO · CONFIGURE SEU TANQUE';
+  if (status) status.textContent = pendingTankClass || pendingWeapon ? 'CONFIGURAÇÃO APLICADA NO PRÓXIMO RETORNO' : 'COMBATE ATIVO · CONFIGURE SEU TANQUE';
   if (liveStatus) liveStatus.innerHTML = '<i></i> COMBATE ATIVO';
   if (condition) condition.textContent = playerAlive ? 'OPERACIONAL' : 'RETORNO EM CURSO';
   firing = false;
@@ -4666,10 +4695,12 @@ document.querySelectorAll<HTMLButtonElement>('[data-menu-action="garage"], #main
   lightingSelect.dispatchEvent(new Event('change', { bubbles: true }));
   battleMode.value = menuMode.value;
   battleMode.dispatchEvent(new Event('change', { bubbles: true }));
+  applyPendingLoadout();
   battleHasStarted = true;
   (document.getElementById('main-menu-resume') as HTMLButtonElement).hidden = false;
   (document.getElementById('main-menu-leave-header') as HTMLButtonElement).hidden = false;
   hideMainMenu();
+  showBattleTip();
 });
 (document.getElementById('main-menu-leave') as HTMLButtonElement).addEventListener('click', () => {
   leaveBattle();
@@ -4692,7 +4723,37 @@ function setGarageTab(target: string) {
   garage.querySelectorAll<HTMLElement>('[data-garage-section]').forEach(panel => {
     panel.classList.toggle('active', panel.dataset.garageSection === target);
   });
+  if (target === 'leaderboard') void refreshLeaderboard();
 }
+
+type LeaderboardEntry = { place: number; nickname: string; kills: number; crystals: number; rank: string; current: boolean };
+let leaderboardSort: 'rank' | 'crystals' = 'rank';
+async function refreshLeaderboard() {
+  const status = document.getElementById('leaderboard-status')!;
+  const rows = document.getElementById('leaderboard-rows')!;
+  status.textContent = 'Atualizando classificação…'; rows.replaceChildren();
+  try {
+    const sort = leaderboardSort === 'crystals' ? 'crystals' : 'rank';
+    const response = await fetch(`/api/account?view=leaderboard&sort=${sort}`, { credentials: 'same-origin', cache: 'no-store' });
+    const result = await response.json();
+    if (!response.ok || !Array.isArray(result.entries)) throw new Error(result.error ?? 'Ranking indisponível.');
+    for (const entry of result.entries as LeaderboardEntry[]) {
+      const row = document.createElement('tr');
+      if (entry.current) row.classList.add('current-player');
+      for (const value of [String(entry.place), entry.nickname, entry.rank, `${entry.crystals.toLocaleString('pt-BR')} ◈`]) {
+        const cell = document.createElement('td'); cell.textContent = value; row.appendChild(cell);
+      }
+      row.title = `${entry.kills} eliminações confirmadas pelo servidor`;
+      rows.appendChild(row);
+    }
+    status.textContent = result.entries.length ? `Mostrando ${result.entries.length} comandantes · sua posição fica destacada` : 'Ainda não há comandantes no ranking.';
+  } catch (error) { status.textContent = error instanceof Error ? error.message : 'Ranking indisponível.'; }
+}
+document.querySelectorAll<HTMLButtonElement>('[data-leaderboard-sort]').forEach(button => button.addEventListener('click', () => {
+  leaderboardSort = button.dataset.leaderboardSort === 'crystals' ? 'crystals' : 'rank';
+  document.querySelectorAll<HTMLButtonElement>('[data-leaderboard-sort]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+  void refreshLeaderboard();
+}));
 
 document.getElementById('garage-close')!.addEventListener('click', returnToBattle);
 
@@ -4732,6 +4793,13 @@ document.getElementById('team-select')!.addEventListener('change', event => {
 document.getElementById('tank-weapon')!.addEventListener('change', event => {
   const requested = (event.target as HTMLSelectElement).value as WeaponType;
   if (!['cannon', 'rapid', 'mortar', 'plasma', 'ricochet'].includes(requested)) return;
+  if (battleHasStarted && !applyingRespawnLoadout) {
+    pendingWeapon = requested;
+    if (playerAlive && selfDestructTimer <= 0) selfDestructTimer = 3;
+    const status = document.getElementById('garage-status');
+    if (status) status.textContent = 'CONFIGURAÇÃO SALVA · RETORNANDO À GARAGEM';
+    return;
+  }
   selectedWeapon = requested;
   applyWeaponVisual(playerParts, selectedWeapon, selectedTankClass);
   syncGaragePreview();
@@ -4743,6 +4811,13 @@ document.getElementById('tank-weapon')!.addEventListener('change', event => {
 document.getElementById('tank-class')!.addEventListener('change', event => {
   const nextClass = (event.target as HTMLSelectElement).value as TankClass;
   if (!(nextClass in TANK_CLASSES)) return;
+  if (battleHasStarted && !applyingRespawnLoadout) {
+    pendingTankClass = nextClass;
+    if (playerAlive && selfDestructTimer <= 0) selfDestructTimer = 3;
+    const status = document.getElementById('garage-status');
+    if (status) status.textContent = 'CONFIGURAÇÃO SALVA · RETORNANDO À GARAGEM';
+    return;
+  }
   const oldMax = playerMaxHealth;
   selectedTankClass = nextClass;
   const stats = TANK_CLASSES[selectedTankClass];
@@ -6660,7 +6735,8 @@ mobileControlsStyle.textContent = `
   .mobile-aim-stick b{border-color:#79d4c8aa;background:#317b7188}
   #mobile-fire{position:absolute;right:20px;bottom:48px;width:98px;height:64px;border:1px solid #e4b96b;border-radius:50%;background:linear-gradient(145deg,#815d32dd,#472f1ddd);box-shadow:0 5px 18px #0008;color:#fff0ca;font-size:12px;font-weight:900;letter-spacing:1px;pointer-events:auto;touch-action:none}
   #mobile-fire:active{background:#b57e39;color:white;transform:scale(.96)}
-  @media(pointer:coarse) and (max-width:900px){#mobile-controls.active{display:block}#help{display:none!important}.mobile-stick:after{position:absolute;left:0;right:0;bottom:-19px;color:#d6e2e3aa;text-align:center;font:700 8px/1 Arial,sans-serif;letter-spacing:1px}.mobile-stick:not(.mobile-aim-stick):after{content:'MOVER'}.mobile-aim-stick:after{content:'MIRAR'}}
+  @media(pointer:coarse) and (max-width:900px){#mobile-controls.active{display:block}.mobile-stick:after{position:absolute;left:0;right:0;bottom:-19px;color:#d6e2e3aa;text-align:center;font:700 8px/1 Arial,sans-serif;letter-spacing:1px}.mobile-stick:not(.mobile-aim-stick):after{content:'MOVER'}.mobile-aim-stick:after{content:'MIRAR'}}
+  @media(pointer:coarse) and (max-width:600px){.mobile-stick{left:12px;bottom:16px;width:90px;height:90px}.mobile-stick i{inset:24px}.mobile-stick b{left:27px;top:27px;width:34px;height:34px}.mobile-aim-stick{left:auto;right:112px}#mobile-fire{right:12px;bottom:30px;width:82px;height:56px}}
 `;
 document.head.appendChild(mobileControlsStyle);
 const mobileMoveStick = mobileControls.querySelector<HTMLElement>('#mobile-move-stick')!;
@@ -6723,8 +6799,29 @@ mobileFireButton.addEventListener('pointerup', stopMobileFire);
 mobileFireButton.addEventListener('pointercancel', stopMobileFire);
 mobileFireButton.addEventListener('lostpointercapture', stopMobileFire);
 function syncMobileControls() {
-  mobileControls.classList.toggle('active', battleHasStarted && !mainMenuOpen && !garageOpen);
+  mobileControls.classList.toggle('active', mobilePlatformQuery.matches && battleHasStarted && !mainMenuOpen && !garageOpen);
+  helpTip.textContent = mobilePlatformQuery.matches
+    ? 'Esquerda move · direita mira · ATIRAR dispara'
+    : 'WASD mover · mouse mirar · espaço disparar · TAB placar';
+  helpTip.hidden = !battleHasStarted || mainMenuOpen || garageOpen;
 }
+const mobilePlatformQuery = window.matchMedia('(pointer: coarse) and (max-width: 900px)');
+const helpTip = document.getElementById('help')!;
+let helpTipTimer = 0;
+function showBattleTip() {
+  syncMobileControls();
+  helpTip.classList.remove('tip-hidden');
+  window.clearTimeout(helpTipTimer);
+  helpTipTimer = window.setTimeout(() => helpTip.classList.add('tip-hidden'), 16000);
+}
+function dismissBattleTip() {
+  if (!battleHasStarted || helpTip.hidden || helpTip.classList.contains('tip-hidden')) return;
+  window.clearTimeout(helpTipTimer);
+  helpTip.classList.add('tip-hidden');
+}
+mobilePlatformQuery.addEventListener('change', syncMobileControls);
+window.addEventListener('keydown', dismissBattleTip, { capture: true });
+window.addEventListener('pointerdown', dismissBattleTip, { capture: true });
 const playerForward = new THREE.Vector3();
 const playerNextPosition = new THREE.Vector3();
 const playerSlideProbe = new THREE.Vector3();
@@ -6833,7 +6930,7 @@ function updatePlayer(delta: number) {
 function updateSelfDestruct(delta: number) {
   if (selfDestructTimer <= 0 || !playerAlive) return;
   selfDestructTimer -= delta;
-  setText(respawnMessage, `AUTODESTRUIÇÃO EM ${Math.max(1, Math.ceil(selfDestructTimer))}...`);
+  setText(respawnMessage, `${pendingTankClass || pendingWeapon ? 'RETORNANDO À GARAGEM' : 'AUTODESTRUIÇÃO'} · ${Math.max(1, Math.ceil(selfDestructTimer))}s`);
   if (selfDestructTimer <= 0) {
     selfDestructTimer = 0;
     damagePlayer(playerHealth, true);
@@ -6865,6 +6962,7 @@ function updateRespawn(delta: number) {
   if (playerAlive || matchEnded) return;
   respawnTimer -= delta;
   if (respawnTimer > 0) return;
+  applyPendingLoadout();
   playerAlive = true;
   playerHealth = playerMaxHealth;
   playerTeamHealthBar.update(playerHealth, playerMaxHealth);
@@ -6889,6 +6987,24 @@ function updateRespawn(delta: number) {
     if (condition) condition.textContent = 'OPERACIONAL';
   }
   updateHUD();
+}
+
+function applyPendingLoadout() {
+  if (!pendingTankClass && !pendingWeapon) return;
+  applyingRespawnLoadout = true;
+  if (pendingTankClass) {
+    const select = document.getElementById('tank-class') as HTMLSelectElement;
+    select.value = pendingTankClass;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  if (pendingWeapon) {
+    const select = document.getElementById('tank-weapon') as HTMLSelectElement;
+    select.value = pendingWeapon;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  pendingTankClass = null;
+  pendingWeapon = null;
+  applyingRespawnLoadout = false;
 }
 
 // =====================================================
@@ -7014,15 +7130,6 @@ window.addEventListener('keydown', event => {
   if (event.code === 'Space') firing = true;
   if (event.code === 'KeyC') centerTurret = true;
 
-  const weaponHotkeys: Record<string, WeaponType> = { Digit1: 'cannon', Digit2: 'rapid', Digit3: 'mortar', Digit4: 'plasma', Digit5: 'ricochet' };
-  const hotkeyWeapon = weaponHotkeys[event.code];
-  if (hotkeyWeapon) {
-    selectedWeapon = hotkeyWeapon;
-    (document.getElementById('tank-weapon') as HTMLSelectElement).value = selectedWeapon;
-    applyWeaponVisual(playerParts, selectedWeapon, selectedTankClass);
-    syncGaragePreview();
-    updateHUD();
-  }
 });
 
 window.addEventListener('keyup', event => {
@@ -7213,6 +7320,13 @@ player.rotation.set(0, playerArenaHeading(), 0);
 syncTankGearToWorld(playerParts);
 updateHUD();
 updateCamera();
-connectOnlineLobby();
+window.addEventListener('tank-account-ready', (event: Event) => {
+  const account = (event as CustomEvent<AccountView>).detail;
+  playerCrystals = account.crystals;
+  playerKills = account.kills;
+  updateRank();
+  updateHUD();
+});
 showMainMenu();
+initializeAccountGate(connectOnlineLobby);
 animate();

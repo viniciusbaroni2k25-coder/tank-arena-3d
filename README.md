@@ -9,11 +9,11 @@ npm install
 npm run dev
 ```
 
-Vite serves the client and the local WebSocket lobby together. The lobby is for development/LAN play; production uses Cloudflare Pages Functions and a Durable Object.
+`npm run dev` builds the client, starts local Workers/Pages with a Durable Object, then starts Vite on port 5173. Account signup, login, recovery codes, ranking, and authenticated multiplayer all work through the same local address. Use Ctrl+C to stop the whole stack. Production uses the same Pages Function and Durable Object routes.
 
 ## Cloudflare deployment
 
-The Pages site is configured in the root `wrangler.jsonc`. The separate WebSocket lobby Worker and its SQLite-backed Durable Object are in `cloudflare/`.
+The Pages site and its production Durable Object binding are configured in the root `wrangler.toml`. The separate WebSocket lobby Worker and its SQLite-backed Durable Object are in `cloudflare/`.
 
 ```sh
 npm run build

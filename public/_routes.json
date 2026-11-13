@@ -1,5 +1,5 @@
 {
   "version": 1,
-  "include": ["/__tank_arena_online"],
+  "include": ["/__tank_arena_online", "/api/account"],
   "exclude": []
 }

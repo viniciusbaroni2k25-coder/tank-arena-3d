@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev-stack.mjs",
     "build": "tsc && tsc -p cloudflare/tsconfig.json && vite build && node scripts/prune-production-assets.mjs",
     "preview": "vite preview",
     "deploy:worker": "npx --yes --package=node@22 -c 'node ./node_modules/wrangler/bin/wrangler.js deploy --config cloudflare/wrangler.jsonc'",
